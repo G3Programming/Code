@@ -1,4 +1,3 @@
-Grady Gearbox Gangstaz 
-         - 
+Grady Gearbox Gangstaz - 
 Official Github Filestorage Repository
-====
+
