@@ -55,6 +55,7 @@ public class RobotTemplate extends SimpleRobot {
     final double P_CONSTANT = 1;
     final double I_CONSTANT = 1;
     final double D_CONSTANT = 1;
+    final int PHOTOELECTRIC_GATE = 2;
     //Glow
     final int GLOW_RELAY = 1;
     //Joysticks
@@ -89,6 +90,7 @@ public class RobotTemplate extends SimpleRobot {
     PIDController PID1 = new PIDController(P_CONSTANT, I_CONSTANT, D_CONSTANT, Pot1, Arm1);
     PIDController PID2 = new PIDController(P_CONSTANT, I_CONSTANT, D_CONSTANT, Pot2, Arm2);
     Victor Roller = new Victor(ROLLER_VICTOR);
+    DigitalInput Photogate = new DigitalInput(PHOTOELECTRIC_GATE);
     //Glow
     Relay Glow = new Relay(GLOW_RELAY);
     //Joysticks
@@ -186,7 +188,13 @@ public class RobotTemplate extends SimpleRobot {
         if (OpControl.getRawButton(ARM_DOWN)){ //If the Arm Down button is pressed:
             PID2.setSetpoint(voltageGoal2); //Set the arm to the desired angle (in voltage)
         }
-        Roller.set(ROLLER_SPEED); //Set the roller to the desired speed.
+        if (Photogate.get() == false){
+            Roller.set(ROLLER_SPEED); //Set the roller to the desired speed.
+        }
+        if (Photogate.get())
+        {
+            Roller.set(0);
+        }
     }
     
     public void glow(){
