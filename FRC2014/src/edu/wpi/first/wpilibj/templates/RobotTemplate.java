@@ -21,14 +21,13 @@ public class RobotTemplate extends SimpleRobot {
     //Drivetrain
     final int PWM_L_VICTOR = 2;
     final int PWM_R_VICTOR = 6;
-    final int PWM_L_VICTOR_3 = 9;
     final int PWM_L_VICTOR_2 = 7;
     final int PWM_R_VICTOR_2 = 1;
     final double DBW = .3;
     //Choo-Choo
     final int CHOO_CHOO_VICTOR = 5;
     final double CHOO_CHOO_SPEED = 0.8;
-    final int CHOO_CHOO_LIMIT = 1;
+    final int CHOO_CHOO_LIMIT = 3;
     //Arm
     final int ROLLER_VICTOR = 4;
     final double ROLLER_SPEED = 0.8;
@@ -45,9 +44,10 @@ public class RobotTemplate extends SimpleRobot {
     //Joysticks
     final int PILOT = 1;
     final int OP_CONTROL = 2;
-    final int CHOO_CHOO_BUTTON = 2;
+    final int CHOO_CHOO_BUTTON = 1;
     final int ARM_UP = 4;
-    final int ARM_DOWN = 1;
+    final int ARM_DOWN = 3;
+    final int ROLLER = 2;
     //Autonomous
     final double AUTO_WAIT_TIME = 3.2;
     final double AUTO_SPEED = 1.0;
@@ -56,6 +56,7 @@ public class RobotTemplate extends SimpleRobot {
     final int FORWARD_AXIS = 2;
     final int TURN_AXIS = 4;
     final int SLOW_BUTTON = 6;
+    final int ROLLER_AUTO_TIME = 5;
     
     /* [CONSTRUCTORS] */
     // This is where we construct all of the objects we use in the code, such as Victors and DigitalInputs.
@@ -65,14 +66,12 @@ public class RobotTemplate extends SimpleRobot {
     Victor R = new Victor(PWM_R_VICTOR);
     Victor L2 = new Victor(PWM_L_VICTOR_2);
     Victor R2 = new Victor(PWM_R_VICTOR_2);
-    Victor L3 = new Victor(PWM_L_VICTOR_3);
     //Choo-Choo
     Victor ChooChoo = new Victor(CHOO_CHOO_VICTOR);
     
     
-    // FOR SOME REASON THIS NEXT CONSTRUCTION GIVES US A HUGE ERROR AND MAKES THINGS NOT WORK
-    /*DigitalInput Limit = new DigitalInput(CHOO_CHOO_LIMIT);*/
-    
+    // THIS CHANNEL CANNOT BE 1
+    DigitalInput limitSwitch = new DigitalInput(CHOO_CHOO_LIMIT);
     
     //Arm
     Victor Roller = new Victor(ROLLER_VICTOR);
@@ -95,68 +94,127 @@ public class RobotTemplate extends SimpleRobot {
     // This is where we initialize objects that are not yet constructed, 
     // such as the Driver Station and the LCDDisplay.
     
-    DriverStation DvrStation;
-    DriverStationLCD LCDDisplay;
-    
     /* [VARIABLE ASSIGNMENTS] */
     // This is where we initialize variables that will be used throughout the code.
     
     //Drivetrain
     double left, right, forward, turn;
     int rMotorSign, lMotorSign;
-    boolean slow;
+    boolean slow, isAuto;
+    boolean armup = true;
+    boolean armstate = false;
+    boolean rollerstate = false;
+    boolean rollermoving = false;
+    
+    DriverStation DvrStation = DriverStation.getInstance();
+    DriverStationLCD LCDDisplay = DriverStationLCD.getInstance();
     
     
     public void robotInit(){
         
-        DvrStation = DriverStation.getInstance(); // Initialize the Driver Station.
-        LCDDisplay = DriverStationLCD.getInstance(); // Get instance of the LCD Screen.
+        //DvrStation = DriverStation.getInstance(); // Initialize the Driver Station.
+        //LCDDisplay = DriverStationLCD.getInstance(); // Get instance of the LCD Screen.
         
     }
   
     public void autonomous() {
         
-        /*Compressor.start(); // Start the Compressor.
+        if (isAuto){
+        autonomous1();
+        //autonomous2();
+        }
+        
+    }
+    
+    public void autonomous1(){
+    
+        if (isAuto){
+        Compressor.start(); // Start the Compressor.
         ChooChoo.set(CHOO_CHOO_SPEED); // Set the choo choo motor to the desired speed.
         
-            if (Limit.get()){ // If the limit switch is pressed:
+            if (limitSwitch.get()){ // If the limit switch is pressed:
                 ChooChoo.set(0); // Set the choo choo motor 0.
             }
             
         L.set(-AUTO_SPEED); // Drive forward (all motors set to desired speed).
         L2.set(-AUTO_SPEED);
-        L3.set(-AUTO_SPEED);
         R.set(AUTO_SPEED);
         R2.set(AUTO_SPEED);
-        //R3.set(AUTO_SPEED);
         
         Timer.delay(AUTO_WAIT_TIME); // Wait a specified amount of time so the robot can keep driving.
         
         L.set(0); // Stop all motors so the robot stops moving.
         L2.set(0);
-        L3.set(0);
         R.set(0);
         R2.set(0);
-        //R3.set(0);*/
+        }
+        
+    }
+    
+    public void autonomous2(){
+        
+        if (isAuto){
+        Compressor.start(); // Start the Compressor.
+        ChooChoo.set(CHOO_CHOO_SPEED); // Set the choo choo motor to the desired speed.
+        
+        
+            if (limitSwitch.get()){ // If the limit switch is pressed:
+                ChooChoo.set(0); // Set the choo choo motor 0.
+            }
+        
+        Sol1.set(false); // Move the pistons out (makes the arm go down)
+        Sol3.set(false);
+        Sol2.set(true);
+        Sol4.set(true); 
+        Timer.delay(ARM_TIME);
+        Sol1.set(false); // Make the pistons stop moving.
+        Sol3.set(false);
+        Sol2.set(false);
+        Sol4.set(false);
+        
+        Roller.set(ROLLER_SPEED);
+        Timer.delay(ROLLER_AUTO_TIME);
+        Roller.set(0);
+        
+        ChooChoo.set(CHOO_CHOO_SPEED); // Set the choo choo motor to the desired speed.
+        
+        
+            if (limitSwitch.get()){ // If the limit switch is pressed:
+                ChooChoo.set(0); // Set the choo choo motor 0.
+            }
+            
+        L.set(-AUTO_SPEED); // Drive forward (all motors set to desired speed).
+        L2.set(-AUTO_SPEED);
+        R.set(AUTO_SPEED);
+        R2.set(AUTO_SPEED);
+        
+        Timer.delay(AUTO_WAIT_TIME); // Wait a specified amount of time so the robot can keep driving.
+        
+        L.set(0); // Stop all motors so the robot stops moving.
+        L2.set(0);
+        R.set(0);
+        R2.set(0);
+        }
         
     }
 
     public void operatorControl() {
         
-        //Compressor.start(); // Start the compressor.
-        /*Sol1.set(false); // Set all the solenoids to false (so the pistons aren't moving).
+        Compressor.start(); // Start the compressor.
+        Sol1.set(false); // Set all the solenoids to false (so the pistons aren't moving).
         Sol3.set(false);
         Sol2.set(false);
-        Sol4.set(false);*/
+        Sol4.set(false);
         
         while (isOperatorControl() && isEnabled()){
-            //troubleshoot();
-            arcadeDrive(); // Arcade-style Drive
+            LCDDisplay.updateLCD();
+            isAuto = false;
+            arcadeDrive(); // Arcade-style Drivetrain
             //tankDrive(); // Tank-style Drivetrain
             //chooChoo(); // Our shooting mechanism (catapult)
-            //intakeArm(); // Our intake system (passive roller on a moving arm)
-            //intakeArmPneumatic(); // Our intake system, but using pneumatics 
+            intakeArmPneumatic(); // Our intake system, but using pneumatics 
             //glow(); // Underglow to make our robot even more gorgeous
+            //troubleshoot();
         }
         
     }
@@ -169,7 +227,6 @@ public class RobotTemplate extends SimpleRobot {
         if ((left < DBW) && (left > -DBW)){ // If the left value is in this interval:
             L.set(0); // Set all the left motors to 0.
             L2.set(0);
-            L3.set(0);
         }
         
         if ((right < DBW) && (right > -DBW)){ // If the right value is in this interval:
@@ -179,10 +236,9 @@ public class RobotTemplate extends SimpleRobot {
    
         L.set(left); // Set the left motors to the left value.
         L2.set(left);
-        L3.set(left);
         R.set(-right); // Set the right motors to the right value,
         R2.set(-right); // but negative so the wheels go in the same direction.
-        //R3.set(-right);
+        
         
     }
     
@@ -251,10 +307,8 @@ public class RobotTemplate extends SimpleRobot {
     
     L.set(left); // Set the left motors to the left value.
     L2.set(left);
-    L3.set(left);
     R.set(-right); // Set the right motors to the right value,
     R2.set(-right); // but negative so the wheels spin in the same direction.
-    //R3.set(right);
     
     }
     
@@ -262,10 +316,15 @@ public class RobotTemplate extends SimpleRobot {
         
         if (OpControl.getRawButton(CHOO_CHOO_BUTTON)){ //If the shooting button is being pressed:
             ChooChoo.set(CHOO_CHOO_SPEED); // Set the choo choo motor to the desired speed.
-            /*
-            if (Limit.get()){ // If the limit switch is pressed:
+            
+            
+            if (limitSwitch.get()){ // If the limit switch is pressed:
                 ChooChoo.set(0); // Set the choo choo motor to 0.
-            }*/
+                LCDDisplay.println(DriverStationLCD.Line.kUser3, 1, "Limit Switch Hit   ");
+            }
+            else {
+                LCDDisplay.println(DriverStationLCD.Line.kUser3, 1, "Limit Switch Free");
+            }
             
         }
         
@@ -273,37 +332,22 @@ public class RobotTemplate extends SimpleRobot {
     
     public void intakeArmPneumatic(){
         
-        if (OpControl.getRawButton(ARM_UP)){ // If the arm up button is being held:
-            
-            Sol1.set(true); // Move the pistons in.
-            Sol3.set(true);
-            Sol2.set(false);
-            Sol4.set(false); 
-            Timer.delay(ARM_TIME);
-            Sol1.set(false); // Make the pistons stop moving.
-            Sol3.set(false);
-            Sol2.set(false);
-            Sol4.set(false);
-        } 
-        
-        if (OpControl.getRawButton(ARM_DOWN)){ // If the arm down button is being held:
-            Sol1.set(false); // Move the pistons out.
-            Sol3.set(false);
-            Sol2.set(true);
-            Sol4.set(true); 
-            Timer.delay(ARM_TIME);
-            Sol1.set(false); // Make the pistons stop moving.
-            Sol3.set(false);
-            Sol2.set(false);
-            Sol4.set(false);
+        if (OpControl.getRawButton(ARM_UP)){
+            armstate = true;
         }
         
-        if (Photogate.get() == false){ // If the intake currently has a ball:
-            Roller.set(ROLLER_SPEED); // Set the roller to the desired speed.
+        else if ((!OpControl.getRawButton(ARM_UP)) && armstate) {
+            toggleArm();
+            armstate = false;
         }
         
-        if (Photogate.get()){ // If the intake is clear:
-            Roller.set(0); // Set the roller to stop moving.
+        if (OpControl.getRawButton(ROLLER)){
+            rollerstate = true;
+        }
+        
+        else if ((!OpControl.getRawButton(ROLLER)) && rollerstate) {
+            toggleRoller();
+            rollerstate = false;
         }
         
     }
@@ -313,12 +357,77 @@ public class RobotTemplate extends SimpleRobot {
         Glow.set(Relay.Value.kForward); // Turn the LED underglow lights on.
         
     }
-    /*
+    
+    public void toggleArm(){
+        
+        if (armup){
+            armup = false;
+            Sol1.set(false); // Move the pistons out.
+            Sol3.set(false);
+            Sol2.set(true);
+            Sol4.set(true); 
+            Timer.delay(ARM_TIME);
+            Sol1.set(false); // Make the pistons stop moving.
+            Sol3.set(false);
+            Sol2.set(false);
+            Sol4.set(false);
+            LCDDisplay.println(DriverStationLCD.Line.kUser1, 1, "arm down");
+            LCDDisplay.updateLCD();
+            
+        }
+        else if (armup == false) {
+            armup = true;
+            Sol1.set(true); // Move the pistons in.
+            Sol3.set(true);
+            Sol2.set(false);
+            Sol4.set(false); 
+            Timer.delay(ARM_TIME);
+            Sol1.set(false); // Make the pistons stop moving.
+            Sol3.set(false);
+            Sol2.set(false);
+            Sol4.set(false);
+            LCDDisplay.println(DriverStationLCD.Line.kUser1, 1, "arm up   ");
+            LCDDisplay.updateLCD();
+        }
+        
+    }
+    
+    public void toggleRoller(){
+        
+        if (rollermoving){
+            rollermoving = false;
+            Roller.set(0);
+            LCDDisplay.println(DriverStationLCD.Line.kUser2, 1, "roller stopped");
+            LCDDisplay.updateLCD();
+            
+        }
+        else if (rollermoving == false) {
+            rollermoving = true;
+            Roller.set(ROLLER_SPEED);
+            LCDDisplay.println(DriverStationLCD.Line.kUser2, 1, "roller started");
+            LCDDisplay.updateLCD();
+        }
+        
+    }
+    
+    public void LCDscreen(){
+        
+        
+        
+    }
+    
+    public void catcher(){
+    
+    }
+    
     public void troubleshoot(){
-        L.set(1);
-        L2.set(1);
-        L3.set(1);
-    }*/
+        
+    }
     
 }
 
+// RECENT CHANGES (2/3/14)
+//
+// - Added second autonomous mode and isAuto boolean to prevent autonomous from continuing during TeleOp mode
+// - Changed the name of the constructed Limit Switch in hopes of it removing whatever error occured
+// - Added toggle buttons for Arm and Roller.
