@@ -21,16 +21,19 @@ public class RobotTemplate extends SimpleRobot {
     //Drivetrain
     final int PWM_L_VICTOR = 2;
     final int PWM_R_VICTOR = 6;
-    final int PWM_L_VICTOR_2 = 7;
-    final int PWM_R_VICTOR_2 = 1;
+    final int PWM_L_VICTOR_2 = 1; // should be 7
+    final int PWM_R_VICTOR_2 = 4; // should be 1
+    //final int PWM_L_VICTOR_3 = 9;
+    //final int PWM_R_VICTOR_3 = 3;
     final double DBW = .3;
     //Choo-Choo
     final int CHOO_CHOO_VICTOR = 5;
     final double CHOO_CHOO_SPEED = 0.8;
     final int CHOO_CHOO_LIMIT = 3;
+    final double CHOO_CHOO_DELAY_TIME = .5;
     //Arm
-    final int ROLLER_VICTOR = 4;
-    final double ROLLER_SPEED = 0.8;
+    final int ROLLER_VICTOR = 7; // should be 4, testing it with the practice bot
+    final double ROLLER_SPEED = 0.5;
     final int PHOTOELECTRIC_GATE = 2;
     final int SOLENOID_1 = 3;
     final int SOLENOID_2 = 4;
@@ -66,6 +69,8 @@ public class RobotTemplate extends SimpleRobot {
     Victor R = new Victor(PWM_R_VICTOR);
     Victor L2 = new Victor(PWM_L_VICTOR_2);
     Victor R2 = new Victor(PWM_R_VICTOR_2);
+    //Victor L3 = new Victor (PWM_L_VICTOR_3);
+    //Victor R3 = new Victor (PWM_R_VICTOR_3);
     //Choo-Choo
     Victor ChooChoo = new Victor(CHOO_CHOO_VICTOR);
     
@@ -209,11 +214,13 @@ public class RobotTemplate extends SimpleRobot {
         while (isOperatorControl() && isEnabled()){
             LCDDisplay.updateLCD();
             isAuto = false;
-            arcadeDrive(); // Arcade-style Drivetrain
+            //arcadeDrive(); // Arcade-style Drivetrain
             //tankDrive(); // Tank-style Drivetrain
             //chooChoo(); // Our shooting mechanism (catapult)
             intakeArmPneumatic(); // Our intake system, but using pneumatics 
             //glow(); // Underglow to make our robot even more gorgeous
+            //troubleshoot();
+            limitSwitch();
             //troubleshoot();
         }
         
@@ -238,6 +245,8 @@ public class RobotTemplate extends SimpleRobot {
         L2.set(left);
         R.set(-right); // Set the right motors to the right value,
         R2.set(-right); // but negative so the wheels go in the same direction.
+        //L3.set(left);
+        //R3.set(-right);
         
         
     }
@@ -309,6 +318,8 @@ public class RobotTemplate extends SimpleRobot {
     L2.set(left);
     R.set(-right); // Set the right motors to the right value,
     R2.set(-right); // but negative so the wheels spin in the same direction.
+    //L3.set(left);
+    //R3.set(-right);
     
     }
     
@@ -318,12 +329,14 @@ public class RobotTemplate extends SimpleRobot {
             ChooChoo.set(CHOO_CHOO_SPEED); // Set the choo choo motor to the desired speed.
             
             
-            if (limitSwitch.get()){ // If the limit switch is pressed:
+            if (limitSwitch.get() == false){ // If the limit switch is pressed:
+                ChooChoo.set(-CHOO_CHOO_SPEED);
+                Timer.delay(CHOO_CHOO_DELAY_TIME);
                 ChooChoo.set(0); // Set the choo choo motor to 0.
                 LCDDisplay.println(DriverStationLCD.Line.kUser3, 1, "Limit Switch Hit   ");
             }
-            else {
-                LCDDisplay.println(DriverStationLCD.Line.kUser3, 1, "Limit Switch Free");
+            else if (limitSwitch.get() == true){
+                LCDDisplay.println(DriverStationLCD.Line.kUser3, 1, "Limit Switch Free   ");
             }
             
         }
@@ -371,7 +384,7 @@ public class RobotTemplate extends SimpleRobot {
             Sol3.set(false);
             Sol2.set(false);
             Sol4.set(false);
-            LCDDisplay.println(DriverStationLCD.Line.kUser1, 1, "arm down");
+            LCDDisplay.println(DriverStationLCD.Line.kUser1, 1, "Arm Down   ");
             LCDDisplay.updateLCD();
             
         }
@@ -386,7 +399,7 @@ public class RobotTemplate extends SimpleRobot {
             Sol3.set(false);
             Sol2.set(false);
             Sol4.set(false);
-            LCDDisplay.println(DriverStationLCD.Line.kUser1, 1, "arm up   ");
+            LCDDisplay.println(DriverStationLCD.Line.kUser1, 1, "Arm Up   ");
             LCDDisplay.updateLCD();
         }
         
@@ -397,23 +410,26 @@ public class RobotTemplate extends SimpleRobot {
         if (rollermoving){
             rollermoving = false;
             Roller.set(0);
-            LCDDisplay.println(DriverStationLCD.Line.kUser2, 1, "roller stopped");
+            LCDDisplay.println(DriverStationLCD.Line.kUser2, 1, "Roller Stopped    ");
             LCDDisplay.updateLCD();
             
         }
         else if (rollermoving == false) {
             rollermoving = true;
             Roller.set(ROLLER_SPEED);
-            LCDDisplay.println(DriverStationLCD.Line.kUser2, 1, "roller started");
+            LCDDisplay.println(DriverStationLCD.Line.kUser2, 1, "Roller Started    ");
             LCDDisplay.updateLCD();
         }
         
     }
     
-    public void LCDscreen(){
-        
-        
-        
+    public void limitSwitch(){
+        if (limitSwitch.get() == true){
+            LCDDisplay.println(DriverStationLCD.Line.kUser4, 1, "True   ");
+        }
+        else if (limitSwitch.get() == false){
+            LCDDisplay.println(DriverStationLCD.Line.kUser4, 1, "False   ");
+        }
     }
     
     public void catcher(){
@@ -426,8 +442,7 @@ public class RobotTemplate extends SimpleRobot {
     
 }
 
-// RECENT CHANGES (2/3/14)
-//
-// - Added second autonomous mode and isAuto boolean to prevent autonomous from continuing during TeleOp mode
-// - Changed the name of the constructed Limit Switch in hopes of it removing whatever error occured
-// - Added toggle buttons for Arm and Roller.
+// THINGS TO DO:
+// - Tune the limit switch
+// - Intake with Pneumatics
+// - Autonomous mode
