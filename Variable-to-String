@@ -1,0 +1,10 @@
+int a = 5743;
+
+LCDDisplay.println(DriverStationLCD.Line.kUser1, 1, "Variable a: " + a); 
+// Since .println for the Driver Display can only take in Strings, this method is necessary for 
+// printing variables to your console
+
+// This line will print 'Variable a: 5743' to the first line of the Driver Station
+
+// For simply printing the variable value without any text to accomodate it, use 'a + " "',
+// resulting in the print of 'a '
