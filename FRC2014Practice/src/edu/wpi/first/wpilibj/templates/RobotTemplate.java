@@ -19,10 +19,12 @@ public class RobotTemplate extends SimpleRobot {
     // Arm, Glow, Joysticks, and Autonomous.
     
     //Drivetrain
-    final int PWM_L_VICTOR = 10;
-    final int PWM_R_VICTOR = 5; 
-    final int PWM_L_VICTOR_2 = 9; 
-    final int PWM_R_VICTOR_2 = 6; 
+    final int PWM_L_VICTOR = 5;
+    final int PWM_L_VICTOR_2 = 6;
+    final int PWM_R_VICTOR = 10;
+    final int PWM_R_VICTOR_2 = 9; 
+    final int PWM_R_VICTOR_3 = 4;
+    final int PWM_L_VICTOR_3 = 3; 
     final double DBW = .3;
     //Choo-Choo
     final int CHOO_CHOO_VICTOR = 2;
@@ -32,8 +34,8 @@ public class RobotTemplate extends SimpleRobot {
     //Arm
     final int ROLLER_VICTOR = 7;
     final double ROLLER_SPEED_STOPPED = 1.0;
-    final int SOLENOID_1 = 5; 
-    final int SOLENOID_2 = 6; 
+    final int SOLENOID_1 = 1; //5 competition
+    final int SOLENOID_2 = 2; //6 competition
     final int SOLENOID_3 = 7;
     final int SOLENOID_4 = 8;
     final double ARM_TIME = .1;
@@ -60,8 +62,8 @@ public class RobotTemplate extends SimpleRobot {
     final int AUTO_FEED_TIME = 3;
     final int AUTO_ARM_DOWN_TIME = 2;
     //Catch
-    final int C_SOLENOID_1 = 1; 
-    final int C_SOLENOID_2 = 2; 
+    final int C_SOLENOID_1 = 5; 
+    final int C_SOLENOID_2 = 6; 
     final double CATCH_TIME = .3;
     //Safety
     final double CHOO_CHOO_SAFETY = .1;
@@ -75,6 +77,8 @@ public class RobotTemplate extends SimpleRobot {
     Victor R = new Victor(PWM_R_VICTOR);
     Victor L2 = new Victor(PWM_L_VICTOR_2);
     Victor R2 = new Victor(PWM_R_VICTOR_2);
+    Victor L3 = new Victor (PWM_L_VICTOR_3);
+    Victor R3 = new Victor (PWM_R_VICTOR_3);
     //Choo-Choo
     Victor ChooChoo = new Victor(CHOO_CHOO_VICTOR);
     DigitalInput limitSwitch = new DigitalInput(CHOO_CHOO_LIMIT); // This channel cannot be 1
@@ -150,11 +154,15 @@ public class RobotTemplate extends SimpleRobot {
             L2.set(AUTO_SPEED);
             R.set(-AUTO_SPEED);
             R2.set(-AUTO_SPEED);
+            L3.set(AUTO_SPEED);
+            R3.set(-AUTO_SPEED);
             Timer.delay(AUTO_WAIT_TIME); // Wait a specified amount of time so the robot can keep driving.
             L.set(0); // Stop all motors so the robot stops moving.
             L2.set(0);
             R.set(0);
             R2.set(0);
+            L3.set(0);
+            R3.set(0);
         }
         
     }
@@ -192,17 +200,21 @@ public class RobotTemplate extends SimpleRobot {
         if ((left < DBW) && (left > -DBW)){ // If the left value is in this interval:
             L.set(0); // Set all the left motors to 0.
             L2.set(0);
+            L3.set(0);
         }
         
         if ((right < DBW) && (right > -DBW)){ // If the right value is in this interval:
             R.set(0); // Set all the right motors to 0.
             R2.set(0);
+            R3.set(0);
         }
    
         L.set(left); // Set the left motors to the left value.
         L2.set(left);
         R.set(-right); // Set the right motors to the right value, but negative so the wheels go in the same direction.
         R2.set(-right); 
+        L3.set(left);
+        R3.set(-right);
         
     }
     
@@ -273,6 +285,8 @@ public class RobotTemplate extends SimpleRobot {
         L2.set(left);
         R.set(-right); // Set the right motors to the right value, but negative so the wheels spin in the same direction.
         R2.set(-right); 
+        L3.set(left);
+        R3.set(-right);
     
     }
     
