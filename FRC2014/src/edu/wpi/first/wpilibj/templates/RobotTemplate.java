@@ -24,11 +24,16 @@ public class RobotTemplate extends SimpleRobot {
     final int PWM_L_VICTOR_2 = 9; 
     final int PWM_R_VICTOR_2 = 6; 
     final double DBW = .3;
+    final double DRIFT_CONSTANT = .7;
+    
     //Choo-Choo
     final int CHOO_CHOO_VICTOR = 2;
-    final double CHOO_CHOO_SPEED = 0.8;
+    final double CHOO_CHOO_SPEED = -1;
     final int CHOO_CHOO_LIMIT = 2;
-    final double CHOO_CHOO_DELAY_TIME = .5;
+    final double CHOO_CHOO_TIME = .4;
+    final double CHOO_CHOO_STOP = .05;
+    final double CHOO_CHOO_DELAY = .2;
+    
     //Arm
     final int ROLLER_VICTOR = 7;
     final double ROLLER_SPEED_STOPPED = 1.0;
@@ -39,8 +44,10 @@ public class RobotTemplate extends SimpleRobot {
     final double ARM_TIME = .1;
     final int SWITCH_CHANNEL = 14;
     final int RELAY_CHANNEL = 3;
+    
     //Glow
     final int GLOW_RELAY = 2;
+    
     //Joysticks
     final int PILOT = 1;
     final int OP_CONTROL = 2;
@@ -48,8 +55,13 @@ public class RobotTemplate extends SimpleRobot {
     final int ARM_TOGGLE = 4;
     final int CATCH = 3;
     final int ROLLER = 2;
+    final int ROLLER_BACKWARDS = 6;
+    final int FANCY_SHOOT_BUTTON = 6;
+    final int PANIC_BUTTON = 5;
+    
     //Autonomous
     final double AUTO_WAIT_TIME = 1;
+    final double AUTO_SHOOT_DRIVE_TIME = .6;
     final double AUTO_SPEED = 1.0;
     final int L_CHANNEL = 2;
     final int R_CHANNEL = 5;
@@ -59,13 +71,15 @@ public class RobotTemplate extends SimpleRobot {
     final double ROLLER_AUTO_TIME = .3;
     final int AUTO_FEED_TIME = 3;
     final int AUTO_ARM_DOWN_TIME = 2;
+    
     //Catch
     final int C_SOLENOID_1 = 1; 
     final int C_SOLENOID_2 = 2; 
     final double CATCH_TIME = .3;
+    
     //Safety
     final double CHOO_CHOO_SAFETY = .1;
-    final double SAFETY_TIME = 139.9;
+    final double SAFETY_TIME = 139.5;
     
     /* [CONSTRUCTORS] */
     // This is where we construct all of the objects we use in the code, such as Victors and DigitalInputs.
@@ -75,9 +89,11 @@ public class RobotTemplate extends SimpleRobot {
     Victor R = new Victor(PWM_R_VICTOR);
     Victor L2 = new Victor(PWM_L_VICTOR_2);
     Victor R2 = new Victor(PWM_R_VICTOR_2);
+    
     //Choo-Choo
     Victor ChooChoo = new Victor(CHOO_CHOO_VICTOR);
     DigitalInput limitSwitch = new DigitalInput(CHOO_CHOO_LIMIT); // This channel cannot be 1
+    
     //Arm
     Victor Roller = new Victor(ROLLER_VICTOR);
     //Arm (Pneumatic)
@@ -86,13 +102,17 @@ public class RobotTemplate extends SimpleRobot {
     Solenoid Sol3 = new Solenoid(SOLENOID_3);
     Solenoid Sol4 = new Solenoid(SOLENOID_4);
     Compressor onCompressor = new Compressor(SWITCH_CHANNEL, RELAY_CHANNEL);
+    
     //Glow
     Relay Glow = new Relay(GLOW_RELAY);
+    
     //Joysticks
     Joystick Pilot = new Joystick(PILOT);
     Joystick OpControl = new Joystick(OP_CONTROL);
+    
     //Autonomous
     Timer timer = new Timer();
+    
     //Catch
     Solenoid cSolenoid1 = new Solenoid(C_SOLENOID_1);
     Solenoid cSolenoid2 = new Solenoid(C_SOLENOID_2);
@@ -109,7 +129,7 @@ public class RobotTemplate extends SimpleRobot {
     /* [VARIABLE ASSIGNMENTS] */
     // This is where we initialize variables that will be used throughout the code.
     
-    //Drivetrain
+    //Values for Drivetrain/Shooter/Intake
     double left, right, forward, turn;
     int rMotorSign, lMotorSign;
     boolean slow, isAuto;
@@ -119,6 +139,9 @@ public class RobotTemplate extends SimpleRobot {
     boolean rollermoving = false;
     boolean catchstate = false;
     boolean catchopen = false;
+    boolean shootercocked = true;
+    boolean rollerbackstate = false;
+    boolean panicButton = false;
     
     public void autonomous() {
         
@@ -126,7 +149,8 @@ public class RobotTemplate extends SimpleRobot {
         if (isAuto){  // If it is the autonomous mode:
             autonomous1(); // Run the autonomous mode.
             compress(); // Start the compressor.
-            glow(); // Make the robot look sexy.
+            glow(); // Make the robot look soopah sexy.
+            limitSwitch(); // Monitors the status of the limit switch.
         }
         
     }
@@ -134,16 +158,17 @@ public class RobotTemplate extends SimpleRobot {
     public void autonomous1(){
     
         if (isAuto){ // If it is the autonomous mode:
-            toggleArm(); // Move the arm down.
-            Timer.delay(AUTO_ARM_DOWN_TIME); // Wait for the arm to lower.
-            //shoot(); // Shoot the ball.
+            L.set(-AUTO_SPEED); // Drive forward (all motors set to desired speed).
+            L2.set(-AUTO_SPEED);
+            R.set(AUTO_SPEED);
+            R2.set(AUTO_SPEED);
+            Timer.delay(AUTO_SHOOT_DRIVE_TIME); // Wait a specified amount of time so the robot can keep driving.
+            L.set(0); // Stop all motors so the robot stops moving.
+            L2.set(0);
+            R.set(0);
+            R2.set(0);
+            shoot(); // Shoot the ball.
             LCDDisplay.println(DriverStationLCD.Line.kUser6, 1, "Shot ball    ");
-            LCDDisplay.updateLCD();
-            toggleRoller(); // Start the roller.
-            Timer.delay(AUTO_FEED_TIME);
-            toggleRoller(); // Stop the roller.
-            //shoot(); // Shoot the ball.
-            LCDDisplay.println(DriverStationLCD.Line.kUser6, 1, "Shot ball 2   ");
             LCDDisplay.updateLCD();
             toggleArm(); // Move the arm up.
             L.set(AUTO_SPEED); // Drive backward (all motors set to desired speed).
@@ -161,7 +186,6 @@ public class RobotTemplate extends SimpleRobot {
 
     public void operatorControl() {
         
-        compress(); // Start the compressor.
         matchTimer.start(); // Start the match timer.
         Sol1.set(false); // Set all the solenoids to false (so the pistons aren't moving).
         Sol3.set(false);
@@ -172,14 +196,20 @@ public class RobotTemplate extends SimpleRobot {
             isAuto = false; // It is not the autonomous mode.
             arcadeDrive(); // Arcade-style Drivetrain
             //tankDrive(); // Tank-style Drivetrain
-            //chooChoo(); // Our shooting mechanism (catapult)
             intakeArm(); // Our intake system, but using pneumatics 
             glow(); // Underglow to make our robot even more gorgeous
             catcher(); // Our catching system with pneumatics
-            pressure(); // Monitors the condition of the compressor
-            /*if (matchTimer.get() == SAFETY_TIME){
+            limitSwitch(); // Monitors the status of the limit switch
+            compress();
+            shooterPanic();
+            if(panicButton == false){ // Checks to see if panic button has been pressed and lets shooter run if not toggled
+                chooChoo();// Our shooting mechanism (catapult)
+            }
+            if (matchTimer.get() >= SAFETY_TIME && matchTimer.get() <= (SAFETY_TIME+2)) {// Waits until the end of the match
+                                                                                          // to disable the robot and fixes the
+                                                                                          // shooter+catcher+arm positions
                 safety();
-            }*/
+            }
         }
         
     }
@@ -268,7 +298,9 @@ public class RobotTemplate extends SimpleRobot {
             right = right * .35; // The right and left motors will have 35% of their usual power.
             left = left * .35;
         }
-    
+        
+        right = right*DRIFT_CONSTANT;
+        
         L.set(left); // Set the left motors to the left value.
         L2.set(left);
         R.set(-right); // Set the right motors to the right value, but negative so the wheels spin in the same direction.
@@ -281,21 +313,42 @@ public class RobotTemplate extends SimpleRobot {
         if (OpControl.getRawButton(CHOO_CHOO_BUTTON)){ // If the shooting button is being pressed:
             shoot(); // Shoot the ball.
         }
-        
-    }
-    public void shoot(){
-        
-        ChooChoo.set(CHOO_CHOO_SPEED); // Move the catapult.
-        if (limitSwitch.get() == false){ // If the limit switch is pressed:
-            ChooChoo.set(0); // Set the choo choo motor to 0.
-            LCDDisplay.println(DriverStationLCD.Line.kUser3, 1, "Limit Switch Hit   ");
-        }
-        else if (limitSwitch.get() == true){
-            LCDDisplay.println(DriverStationLCD.Line.kUser3, 1, "Limit Switch Free   ");
+        if (Pilot.getRawButton(FANCY_SHOOT_BUTTON)){
+            shoot(); // Shoot the ball.
         }
         
     }
     
+    public void shoot(){
+        
+        if (!armup){ // If the arm is up:
+            toggleArm();
+        }
+        ChooChoo.set(CHOO_CHOO_SPEED); // Move the catapult.
+        shootercocked = false;
+        Timer.delay(CHOO_CHOO_TIME);
+        ChooChoo.set(0);
+        Timer.delay(CHOO_CHOO_STOP);
+        ChooChoo.set(CHOO_CHOO_SPEED);
+    }
+   
+    public void limitSwitch(){
+        
+        if (limitSwitch.get() == false && (OpControl.getRawButton(CHOO_CHOO_BUTTON) == false) && (Pilot.getRawButton(FANCY_SHOOT_BUTTON) == false) && (shootercocked == false)){ // If the limit switch is pressed:
+            Timer.delay(CHOO_CHOO_DELAY);
+            ChooChoo.set(0); // Set the choo choo motor to 0.
+            LCDDisplay.println(DriverStationLCD.Line.kUser3, 1, "LIMIT SWITCH: Hit   ");
+            shootercocked = true;
+        }
+        else if (limitSwitch.get() == false && shootercocked && (OpControl.getRawButton(CHOO_CHOO_BUTTON)) || (Pilot.getRawButton(FANCY_SHOOT_BUTTON))){
+            shoot();
+        }
+        else {
+            LCDDisplay.println(DriverStationLCD.Line.kUser3, 1, "LIMIT SWITCH: Free   ");
+        }
+        
+    }
+        
     public void intakeArm(){
         
         if (OpControl.getRawButton(ARM_TOGGLE)){
@@ -315,7 +368,13 @@ public class RobotTemplate extends SimpleRobot {
             toggleRoller(); // Change the status of the roller (moving/not moving).
             rollerstate = false;
         }
-        
+           if (OpControl.getRawButton(ROLLER_BACKWARDS)){
+            rollerbackstate = true;
+        }
+        else if ((!OpControl.getRawButton(ROLLER_BACKWARDS)) && rollerbackstate){
+            toggleRollerBack();
+            rollerbackstate = false;
+        }     
     }
     
     public void glow(){
@@ -374,7 +433,22 @@ public class RobotTemplate extends SimpleRobot {
         
     }
     
-  
+    public void toggleRollerBack(){
+        
+        if (rollermoving){ // If the roller is moving:
+            rollermoving = false; // Stop the roller.
+            Roller.set(0);
+            LCDDisplay.println(DriverStationLCD.Line.kUser2, 1, "ROLLER: Stopped            ");
+            LCDDisplay.updateLCD();
+        }
+        else if (rollermoving == false) { // If the roller is not moving:
+            rollermoving = true; // Start the roller.
+            Roller.set(-ROLLER_SPEED_STOPPED);
+            LCDDisplay.println(DriverStationLCD.Line.kUser2, 1, "ROLLER: Started Backwards   ");
+            LCDDisplay.updateLCD();
+        }
+        
+    }  
     
     public void catcher(){
         
@@ -419,21 +493,16 @@ public class RobotTemplate extends SimpleRobot {
         }
     }
     
-    public void pressure(){
-        
-        if (onCompressor.getPressureSwitchValue()){
-            LCDDisplay.println(DriverStationLCD.Line.kUser5, 1, "Compressor Off     ");
-        }
-        else if (onCompressor.getPressureSwitchValue() == false){
-            LCDDisplay.println(DriverStationLCD.Line.kUser5, 1, "Compressor On    ");
-        }
-        
-    }
-    
     public void compress(){
         
         onCompressor.start(); // Start the compressor.
-        
+        if (onCompressor.getPressureSwitchValue()){
+            LCDDisplay.println(DriverStationLCD.Line.kUser5, 1, "COMPRESSOR: Off     ");
+        }
+        else if (onCompressor.getPressureSwitchValue() == false){
+            LCDDisplay.println(DriverStationLCD.Line.kUser5, 1, "COMPRESSOR: On    ");
+        }        
+    
     }
     
     public void safety(){
@@ -441,11 +510,29 @@ public class RobotTemplate extends SimpleRobot {
         ChooChoo.set(CHOO_CHOO_SPEED); // Move the catapult up a bit.
         Timer.delay(CHOO_CHOO_SAFETY);
         ChooChoo.set(0);
+        
         if (catchopen){ // If the catcher is open, close the catcher.
             toggleCatch();
         }
-        else if (armup == false){
+        else if (armup){
             toggleArm();
+        }
+        
+    }
+    
+    public void shooterPanic(){
+        
+        if(OpControl.getRawButton(PANIC_BUTTON)){
+            
+            if(panicButton){
+                
+                panicButton = false;
+            }
+            else{
+                
+                panicButton = true;
+            }
+            
         }
         
     }
@@ -453,4 +540,6 @@ public class RobotTemplate extends SimpleRobot {
 }
 
 // THINGS TO DO:
-// - Test & Tune Choo-Choo
+// - Test Safety Function Again
+// - Test Choo-Choo
+// - Tune Autonomous Mode
