@@ -1,0 +1,448 @@
+package org.usfirst.frc.team1648.robot;
+
+import edu.wpi.first.wpilibj.IterativeRobot;
+import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.Victor;
+import edu.wpi.first.wpilibj.Talon;
+import edu.wpi.first.wpilibj.Compressor;
+import edu.wpi.first.wpilibj.Encoder;
+import edu.wpi.first.wpilibj.Solenoid;
+import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.smartdashboard.*;
+
+import java.math.*;
+
+public class Robot extends IterativeRobot {
+	
+	// [****CONSTANTS****] //
+	
+	//Drivetrain 
+	final int PWM_L_VICTOR = 0;
+	final int PWM_L_VICTOR_2 = 1; 
+	final int PWM_R_VICTOR = 2;
+	final int PWM_R_VICTOR_2 = 3;
+		//Encoders
+		final int DIO_R_ENCODER = 0;
+		final int DIO_R_ENCODER_2 = 1;
+		final int DIO_L_ENCODER = 2;
+		final int DIO_L_ENCODER_2 = 3;
+		//Gear and Wheel Specs
+		final int GEAR_TEETH = 52;
+		final int WHEEL_DIAM = 6; //Inches
+	
+	//Elevator
+	final int PWM_E_VICTOR = 4;
+	final int PWM_E_VICTOR_2 = 5;
+		//Distances
+		final int ELE_BOTTOM = 4;
+		final int ELE_TOP = 54;
+		//Encoders
+		final int DIO_E_ENCODER = 4;
+		final int DIO_E_ENCODER_2 = 5;
+		//Limit Switches
+		final int DIO_LIMIT_BOT = 8;
+		final int DIO_LIMIT_TOP = 9;
+		//Sprocket
+		final int SPROCKET_TEETH = 14;
+		final double SPROCKET_DIAM = 1.79; //Inches
+	
+	//Intake
+	final int PWM_I_VICTOR = 6;
+	final int PWM_I_VICTOR_2 = 7;
+	final int DIO_A_SOLENOID = 6;
+	final int DIO_A_SOLENOID_2 = 7;
+	final double INTAKE_SPEED = 0.7;
+	
+	//Joysticks
+	final int PILOT = 0; 
+	final int OP_CONTROL = 1;
+	final int TURN_AXIS = 4;
+	final int FORWARD_AXIS = 1;
+	final int INTAKE_OFF = 5;
+	final int INTAKE_ON = 6;
+	final int INTAKE_REVERSE = 3;
+	final int ARMS_TOGGLE = 1;
+	final double DBW = 0.3;
+	
+	//Autonomous
+	boolean isAuto = false;
+	
+	//Misc
+	final double PI = Math.PI;
+	
+	
+	// [****CONSTRUCTORS****] //
+	
+	//Drivetrain
+	Victor L = new Victor(PWM_L_VICTOR);
+	Victor R = new Victor(PWM_R_VICTOR);
+	Victor L2 = new Victor(PWM_L_VICTOR_2);  
+	Victor R2 = new Victor(PWM_R_VICTOR_2);
+	Encoder encR = new Encoder(DIO_R_ENCODER, DIO_R_ENCODER_2);
+	Encoder encL = new Encoder(DIO_L_ENCODER, DIO_L_ENCODER_2);
+	
+	//Elevator
+	Victor E = new Victor(PWM_E_VICTOR);
+	Victor E2 = new Victor(PWM_E_VICTOR_2);
+	DigitalInput limBot = new DigitalInput(DIO_LIMIT_BOT);
+	DigitalInput limTop = new DigitalInput(DIO_LIMIT_TOP);
+	Encoder encE = new Encoder(DIO_E_ENCODER, DIO_E_ENCODER_2);
+	
+	//Intake
+	Talon I = new Talon(PWM_I_VICTOR);
+	Talon I2 = new Talon(PWM_I_VICTOR_2);
+	
+	//Joysticks
+	Joystick Pilot = new Joystick(PILOT);
+	Joystick OpControl = new Joystick(OP_CONTROL);
+	
+	//Pneumatics
+	Compressor Compressor = new Compressor();
+	Solenoid IntakeArm = new Solenoid(DIO_A_SOLENOID);
+	Solenoid IntakeArm2 = new Solenoid(DIO_A_SOLENOID_2);
+	
+	// [****VARIABLE ASSIGNMENTS****] //
+
+	//Drivetrain 
+	double left, right, forward, turn, rlRatio, lrRatio;
+	double rightEncDist, leftEncDist, rightDistance, leftDistance;
+	int rMotorSign, lMotorSign;
+	
+	//Elevator
+	double eleInput;
+	double eleEncDist, eleDistance;
+	boolean botHit, topHit;
+	
+	//Intake
+	boolean intakeOn, intakeReverse;
+	boolean armInput, armState;
+		
+
+	// [****AUTONOMOUS****] // 
+    public void autonomousPeriodic() {
+    	
+    	isAuto = true;
+    	if(isAuto == true){
+    		
+    		autonomous1();
+    		
+    	}
+    	
+    }
+    
+    public void autonomous1(){
+    	
+    	
+    	
+    }
+
+    
+    // [****TELEOPERATED LOOP****] //
+    public void teleopPeriodic() {
+    	
+    	while(isOperatorControl() && isEnabled()){
+    		
+        	isAuto = false;
+        	arcadeDrive(); //DONE - Quality code, quality people
+        	// elevator(); //DONE - Check for logical errors, make it look neater, whatever
+        	elevator2();
+        	intake();
+        	pneumaticControl(); //WIP - Literally nothing in here other than compressor
+        	smartDashboard(); //DONE - Lmao how could this be any more simple
+        	
+    	}
+    	
+    }
+    
+    
+    // [****ARCADE DRIVE****] //
+    public void arcadeDrive() {
+    	
+    	forward = (Pilot.getRawAxis(FORWARD_AXIS)); 
+    	turn = Pilot.getRawAxis(TURN_AXIS);
+    	right = forward + turn; 
+    	left = forward - turn;
+    	
+    	/*	rightEncDist = encR.getDistance();
+    	leftEncDist = encL.getDistance();
+    	rightDistance = (PI * WHEEL_DIAM) * (rightEncDist / (2 * GEAR_TEETH));
+        leftDistance = (PI * WHEEL_DIAM) * (leftEncDist / (2 * GEAR_TEETH));
+        rlRatio = rightDistance / leftDistance;
+        lrRatio = leftDistance / rightDistance;
+    	*/
+    	
+    	if (-DBW < right && right < DBW){ // If the right value is within the dead-bandwidth zone 
+    		right = 0; // The right value will be set to zero
+    	}
+    	
+    	if (-DBW < left && left < DBW){ // If the left value is within the dead-bandwidth zone
+    		left = 0; // The left value will be set to zero
+    	}
+    	
+    	if (right < 0){ // If the right value is less than zero
+    		rMotorSign = 1; // The right value will be set to negative one
+    	}
+    	
+    	else { // If the right value is greater than zero
+    		rMotorSign = -1; // The right value will be set to one
+    	}
+    	
+    	if (left < 0){ // If the left value is less than zero
+    		lMotorSign = 1; // The left value will be set to zero
+    	}
+    	
+    	else { // If the left value is greater than zero
+    		lMotorSign = -1; // The left value will be set to one
+    	}
+    	
+    	right = right*right*rMotorSign; // This squares the right value in order to make a smoother drivetrain
+    	left = left*left*lMotorSign; // This squares the left value in order to make a smoother drivetrain
+    	
+    	if (right > 1){ // If the right value is somehow greater than one
+    		right = 1; // The right value will be set to one 
+    	}
+    	
+    	if (left > 1){ // If the left value is somehow greater than one
+    		left = 1; // The left value will be set to one
+    	}
+    	
+    	if (right < -1){ // If the right value is somehow less than one
+    		right = -1; // The right value will be set to negative one
+    	}
+    	
+    	if (left < -1){ // If the left value is somehow less than one
+    		left = -1; // The right value will be set to negative one
+    	}
+    	
+    	
+/*    	if(forward != 0 && turn < 0.1){
+    		
+    		if(rightDistance < leftDistance){
+    			
+    			right *= lrRatio;
+    			
+    		}
+    		else if(rightDistance > leftDistance){
+    			
+    			left *= rlRatio;
+    			
+    		}
+    	    	
+    	}
+*/
+        L.set(right); 
+        L2.set(right);
+        R.set(left);
+        R2.set(left);
+    	
+    }
+    
+    
+    // [****INTAKE SYSTEMS****] //
+    public void intake(){
+    	
+    	if (Pilot.getRawButton(INTAKE_ON)){
+    		
+    		intakeOn = true;
+    		intakeReverse = false;
+    		toggleIntake();
+    		
+    	}
+    	if (Pilot.getRawButton(INTAKE_OFF)){
+    		
+    		intakeOn = false;
+    		intakeReverse = false;
+    		toggleIntake();
+    		
+    	}
+    	if (Pilot.getRawButton(INTAKE_REVERSE)){
+    		
+    		intakeReverse = true;
+    		reverseIntake();
+    		
+    	}
+    	
+    }
+    
+    public void toggleIntake(){
+    	
+    	if ((intakeOn == true) && (intakeReverse == false)){
+    		
+    		I.set(INTAKE_SPEED);
+    		I2.set(INTAKE_SPEED);
+    		
+    	}
+    	if (intakeOn == false){
+    		
+    		I.set(0);
+    		I2.set(0);
+    	}
+    	
+    }
+    
+    public void reverseIntake(){
+    	
+    	if (intakeReverse == true){
+    		
+    		I.set(-INTAKE_SPEED);
+    		I2.set(-INTAKE_SPEED);
+    		
+    	}
+    	
+    }
+    
+    public void pneumaticControl(){
+    	
+    	Compressor.enabled();
+    	armState = false; //True = Pushed out, False = Pulled in
+    	armInput = OpControl.getRawButton(ARMS_TOGGLE);
+    	
+    	if (OpControl.getRawButton(ARMS_TOGGLE)){
+    		
+            armState = true;
+        
+    	}
+        
+        else if ((!OpControl.getRawButton(ARMS_TOGGLE)) && armState) {
+        	
+            toggleArms(); // Change the status of the arm (in/out).
+            armState = false;
+            
+        }
+    	
+    }
+    
+    public void toggleArms(){
+    	
+    	if (armState == true){ //Pushes arms for intake out
+    		
+    		IntakeArm.set(armState);
+    		IntakeArm2.set(armState);
+    		
+    	}
+    	else{ //Pulls arms for intake in
+    		
+    		IntakeArm.set(armState);
+    		IntakeArm2.set(armState);
+    		
+    	}
+    	
+    }
+
+    
+    // [****ELEVATOR****] //
+    public void elevator(){
+    	
+    	eleInput = OpControl.getRawAxis(FORWARD_AXIS) * 0.85;  
+    	botHit = limBot.get();
+    	topHit = limBot.get();
+    	eleEncDist = encE.getDistance();
+    	eleDistance = (PI * SPROCKET_DIAM) * (eleEncDist / (2 * SPROCKET_TEETH));
+    	
+    	if(botHit == false && topHit == false){
+    		
+    		if(eleDistance < ELE_TOP && eleDistance > ELE_BOTTOM){
+    			
+    			E.set(eleInput);
+    			E2.set(eleInput);
+    		
+    		}
+    		else if(eleDistance >= ELE_TOP && eleInput > 0){
+    			
+    			E.set(eleInput * 0.5);
+    			E2.set(eleInput * 0.5);
+    			
+    		}
+    		else if(eleDistance <= ELE_BOTTOM && eleInput < 0){
+    			
+    			E.set(eleInput * 0.5);
+    			E2.set(eleInput * 0.5);
+    			
+    		}
+    		else{
+    			
+    			E.set(0);
+    			E2.set(0);
+    			
+    		}
+    	
+    	}
+    	else{
+    		
+    		if(botHit && eleInput > 0){
+    			
+    				E.set(eleInput);
+    				E2.set(eleInput);
+    				
+    		}
+    		else if(topHit && eleInput < 0){
+    			
+    				E.set(eleInput);
+    				E2.set(eleInput);
+    				
+    		}
+    		else{
+    			
+    			E.set(0);
+    			E2.set(0);
+    			
+    		}
+    		
+    	}
+    	
+    }
+    
+    	//Non-encoder version
+    public void elevator2(){
+    	
+    	eleInput = OpControl.getRawAxis(FORWARD_AXIS) * 0.85;  
+    	botHit = limBot.get();
+    	topHit = limBot.get();
+    	
+    	if(botHit == false && topHit == false){
+    		
+    		E.set(eleInput);
+    		E2.set(eleInput);
+    	
+    	}
+    	else{
+    		
+    		if(botHit && eleInput > 0){
+    
+    				E.set(eleInput);
+    				E2.set(eleInput);
+    			
+    		}
+    		else if(topHit && eleInput < 0){
+    		
+    				E.set(eleInput);
+    				E2.set(eleInput);
+    			
+    		}
+    		else{
+    			
+    			E.set(0);
+    			E2.set(0);
+    			
+    		}
+    		
+    	}
+    	
+    }
+    
+    
+    // [****SMARTDASHBOARD****] //
+    public void smartDashboard(){
+    	
+    	SmartDashboard.putNumber("Left Distance", leftDistance);
+    	SmartDashboard.putNumber("Right Distance", rightDistance);
+    	
+    	SmartDashboard.putNumber("Elevator Distance", eleDistance);
+    	
+    	SmartDashboard.putBoolean("Carriage at Bottom", botHit);
+    	SmartDashboard.putBoolean("Carriage at Top", topHit);
+    	
+    }
+    
+    
+}
